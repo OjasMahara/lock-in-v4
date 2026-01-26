@@ -3,309 +3,326 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>LockIn_Tab v3</title>
-<link rel="icon" type="image/png" href="icon.png">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.png">
-<meta name="theme-color" content="#1f2937">
+<title>Lock-In Tool</title>
 <style>
-:root{
-  --bg:#111827; --card:#1f2937; --muted:#94a3b8; --accent:#22c55e;
-  --glass:rgba(255,255,255,.05); --border:rgba(255,255,255,.1);
+:root {
+  --bg: #111827; --card: #1f2937; --muted: #94a3b8; --accent: #22c55e;
+  --glass: rgba(255, 255, 255, .05); --border: rgba(255, 255, 255, .1);
 }
 
 html, body {
   height: 100%; margin: 0; font-family: Inter, system-ui, sans-serif;
-  color: #f8fafc; background: var(--bg); overscroll-behavior-y: none; 
+  color: #f8fafc; background: var(--bg); overscroll-behavior-y: none;
 }
 
-body { display: flex; justify-content: center; align-items: flex-start; }
+body { 
+  display: flex; justify-content: center; align-items: flex-start; 
+  padding: 16px; 
+  box-sizing: border-box;
+}
 
 .app {
-  max-width: 800px; width: 92%; margin: 20px auto; padding: 20px;
+  max-width: 600px; width: 100%; margin: 10px auto; padding: 24px;
   border-radius: 16px; background: var(--card);
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-h1 { margin: 0; font-size: 22px; color: var(--accent); }
-
-input, button {
-  font-size: 16px; padding: 12px; border-radius: 10px;
-  border: 1px solid var(--border); background: #111827; color: inherit;
-  touch-action: manipulation; 
-}
-
-/* --- THE INPUT BAR FIX --- */
-.task-input { 
+header { 
   display: flex; 
-  gap: 8px; 
+  flex-direction: column;
   margin-bottom: 24px; 
 }
+h1 { margin: 0; font-size: 24px; color: var(--accent); }
+.subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
-.task-input input[type=text] { 
-  flex: 2; /* Takes up most of the space */
-  min-width: 0; /* Prevents overflow */
+/* Responsive "Blob" Button Styling */
+button {
+  font-size: 16px; padding: 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: #111827; color: inherit;
+  touch-action: manipulation; cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
+  outline: none;
 }
 
-.task-input input[type=number] { 
-  width: 45px; /* Even tighter than before */
-  text-align: center;
-  padding: 12px 0; /* Vertical padding only to keep it narrow */
-  -moz-appearance: textfield; /* Removes arrows on Firefox */
+button:active {
+  transform: scale(1.08);
+  filter: brightness(1.2);
 }
 
-/* Removes arrows from Min/Sec boxes on Chrome/Safari */
-.task-input input::-webkit-outer-spin-button,
-.task-input input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+input {
+  font-size: 16px; padding: 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: #111827; color: inherit;
+  width: 100%; box-sizing: border-box;
 }
 
-#addBtn {
-  padding: 12px 20px;
-  background: #374151;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-}
+button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); transform: none !important; }
 
-.task-list { display: grid; gap: 12px; }
+.main-add-container { margin-bottom: 24px; }
+.btn-add-task { width: 100%; background: var(--accent); color: #000; font-weight: 700; border: none; }
+
+.task-list { display: grid; gap: 12px; margin-bottom: 12px; }
 .task {
   padding: 16px; border-radius: 12px; border: 1px solid var(--border);
   background: #111827; display: flex; justify-content: space-between;
-  align-items: center; -webkit-tap-highlight-color: transparent; 
+  align-items: center; gap: 12px; transition: all 0.2s ease; overflow: hidden;
+  cursor: pointer;
 }
 
-.timer-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+/* Make task cards feel responsive too */
+.task:active:not(.selected) {
+  transform: scale(0.98);
+}
+
+.task-content { flex: 1; min-width: 0; overflow-wrap: break-word; }
+.task.selected { border: 2px solid var(--accent); box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
+.task.done { background: #1f2937; border-color: #374151; color: #64748b; text-decoration: line-through; opacity: 0.7; }
+
+.btn-edit-task { padding: 8px 10px; font-size: 14px; background: transparent; border: 1px solid var(--border); }
+
+.timer-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; margin-bottom: 10px; }
 .timer-card { background: var(--glass); padding: 15px; border-radius: 14px; border: 1px solid var(--border); text-align: center; }
-.time { font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.time { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.actions { display: flex; gap: 12px; margin-top: 20px; }
+.actions { display: flex; gap: 12px; margin-top: 20px; margin-bottom: 24px;}
 .actions button { flex: 1; padding: 16px; font-size: 18px; }
-
 button.primary { background: var(--accent); border: none; color: #000; font-weight: 700; }
 
-/* --- FOOTER FIX --- */
-.footer-credit {
-  margin: 30px 0 10px 0; /* Added bottom margin */
+footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
   text-align: center;
+  font-size: 11px;
   color: var(--muted);
-  font-size: 12px;
-  width: 100%; /* Ensures true centering */
+  letter-spacing: 0.5px;
 }
 
-/* --- MOBILE SPECIFIC --- */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+  display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+}
+.overlay-card { background: var(--card); padding: 24px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
+
+.picker-container { display: flex; justify-content: center; gap: 10px; margin: 15px 0; }
+.picker-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.picker-col span { font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+.picker-col input { width: 100%; height: 50px; text-align: center; font-size: 20px; border: 2px solid var(--accent); }
+
 @media (max-width: 600px) {
-  .task-input { flex-wrap: wrap; }
-  .task-input input[type=text] { width: 100%; flex: none; }
-  .task-input input[type=number] { flex: 1; }
-  #addBtn { flex: 1.5; } /* Makes add button slightly bigger on mobile */
+  body { padding: 12px; }
+  .app { margin: 0; padding: 20px 16px; }
   .timer-grid { grid-template-columns: 1fr; }
+  .time { font-size: 24px; }
 }
 </style>
 </head>
 <body>
 
-<div class="app" id="appContainer">
+<div class="app">
   <header>
-    <h1>🔒 Lock -In Focus</h1>
-    <div style="color:var(--muted); font-size: 12px;">v3 Mobile</div>
+    <h1>🔒 Lock-In Tool</h1>
+    <div class="subtitle">v4</div>
   </header>
 
-  <div class="task-input" id="taskInputBar">
-    <input id="taskText" type="text" placeholder="New Task..." />
-    <input id="estMin" type="number" min="0" placeholder="Min" />
-    <input id="estSec" type="number" min="0" max="59" placeholder="Sec" />
-    <button id="addBtn">Add</button>
+  <div class="main-add-container" id="addWrapper">
+    <button class="btn-add-task" id="openAddModalBtn">+ Add New Task</button>
   </div>
 
   <div id="taskList" class="task-list"></div>
 
-  <div class="timer-grid">
+  <div id="timerGrid" class="timer-grid">
     <div class="timer-card">
-      <div id="currentTask" style="font-size: 14px; color: var(--muted);">No task</div>
-      <div class="time" id="countdown">00:00</div>
+      <div id="currentTaskDisplay" style="font-size: 12px; color: var(--muted); margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis;">No task</div>
+      <div class="time" id="countdown">00:00:00</div>
     </div>
     <div class="timer-card">
-      <div id="stateText" style="font-size: 14px; color: var(--muted);">Idle</div>
+      <div id="stateText" style="font-size: 12px; color: var(--muted); margin-bottom: 5px;">Idle</div>
       <div class="time" id="stopwatch">00:00:00</div>
     </div>
   </div>
 
   <div class="actions">
     <button id="startBtn" class="primary">Start</button>
-    <button id="completeBtn" class="secondary">Complete</button>
+    <button id="completeBtn">Complete</button>
   </div>
 
-  <div class="footer-credit">by_ojas_mahara</div>
+  <footer>
+    by sajo moanne
+  </footer>
 </div>
+
+<!-- Task Editor Widget -->
+<div id="taskEditorOverlay" class="overlay">
+  <div class="overlay-card">
+    <h3 id="modalTitle" style="margin-top:0">Task Details</h3>
+    <input id="modalTaskName" type="text" placeholder="Task name..." style="margin-bottom: 15px;">
+    
+    <div class="picker-container">
+      <div class="picker-col"><span>Hrs</span><input id="modalHr" type="number" value="0" min="0" max="23"></div>
+      <div class="picker-col"><span>Min</span><input id="modalMin" type="number" value="0" min="0" max="59"></div>
+      <div class="picker-col"><span>Sec</span><input id="modalSec" type="number" value="0" min="0" max="59"></div>
+    </div>
+    
+    <div id="editorError" style="color: #ef4444; font-size: 12px; height: 18px; margin-bottom: 15px;"></div>
+    
+    <div style="display:flex; flex-direction: column; gap: 10px;">
+      <div style="display:flex; gap:10px;">
+        <button id="cancelEditor" style="flex:1; background:#374151; border:none;">Cancel</button>
+        <button id="saveTaskBtn" style="flex:1; background:var(--accent); color:#000; border:none; font-weight: 700;">Confirm</button>
+      </div>
+      <button id="deleteTaskBtn" style="background:transparent; color:#ef4444; border:1px solid #ef4444; font-size: 14px; display: none;">Delete / Scrap Task</button>
+    </div>
+  </div>
+</div>
+
 <div id="resultsOverlay" class="overlay">
-<div class="overlay-card" style="max-width:700px;text-align:left">
-<h3 style="text-align:center">Session Complete</h3>
-<table id="statsTable" style="width:100%;border-collapse:collapse;margin-top:16px;font-size:14px"></table>
-<div id="statsSummary" style="margin-top:16px;font-size:14px;white-space:pre-line"></div>
-<div style="text-align:center;margin-top:20px">
-<button id="closeStatsBtn" class="primary">Start New Session</button>
+  <div class="overlay-card">
+    <h3>Session Over</h3>
+    <div id="statsSummary" style="text-align:left; margin-bottom:20px; white-space:pre-line; font-size:14px;"></div>
+    <button id="closeStatsBtn" class="primary" style="width:100%">New Session</button>
+  </div>
 </div>
-</div>
-</div>
+
 <script>
-let tasks=[],current=null,paused=true,tick=null,taskStart=0,pauseStart=0,totalPaused=0,totalActual=0;
+let tasks=[],current=null,paused=true,tick=null,taskStart=0,editingIndex=null;
 const $=id=>document.getElementById(id);
-const fmt=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-function updateTaskInputVisibility(){
-  $('taskInputBar').style.display = (!paused && current!==null) ? 'none' : 'flex';
-  document.querySelector('.timer-grid').style.display = (current !== null) ? 'grid' : 'none';
-}
-$('addBtn').onclick=()=>{
- const text=$('taskText').value.trim();
- if(!text)return;
- let m=parseInt($('estMin').value||'0',10);
- let s=parseInt($('estSec').value||'0',10);
- if(Number.isNaN(m)||Number.isNaN(s))return alert('Invalid time');
- if(m<0||s<0)return alert('Negative values not allowed');
- if(s>=60)return alert('Seconds must be below 60');
- const est=m*60+s;
- if(est<=0||est>12*60*60)return alert('Time out of range');
- tasks.push({text,est,spent:0,done:false,alerted:false});
- $('taskText').value='';$('estMin').value='';$('estSec').value='';
- render();
+
+const fmt=(s)=>{
+  const h=Math.floor(s/3600);
+  const m=Math.floor((s%3600)/60);
+  const sec=s%60;
+  return `${h>0?String(h).padStart(2,'0')+':':''}${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 };
+
+function updateUI(){
+  $('addWrapper').style.display = (paused || current===null) ? 'block' : 'none';
+  $('timerGrid').style.display = (current !== null) ? 'grid' : 'none';
+}
+
+$('openAddModalBtn').onclick=()=>{
+  editingIndex = null;
+  $('modalTitle').textContent = "Add New Task";
+  $('modalTaskName').value = "";
+  $('modalHr').value = 0; $('modalMin').value = 0; $('modalSec').value = 0;
+  $('deleteTaskBtn').style.display = 'none';
+  $('taskEditorOverlay').style.display='flex';
+};
+
+function openEdit(index){
+  editingIndex = index;
+  const t = tasks[index];
+  $('modalTitle').textContent = "Edit Task";
+  $('modalTaskName').value = t.text;
+  $('modalHr').value = Math.floor(t.est / 3600);
+  $('modalMin').value = Math.floor((t.est % 3600) / 60);
+  $('modalSec').value = t.est % 60;
+  $('deleteTaskBtn').style.display = 'block';
+  $('taskEditorOverlay').style.display='flex';
+}
+
+$('cancelEditor').onclick=()=>{$('taskEditorOverlay').style.display='none';};
+
+$('deleteTaskBtn').onclick=()=>{
+  if(editingIndex !== null) {
+    tasks.splice(editingIndex, 1);
+    if(current === editingIndex) current = null;
+    else if(current > editingIndex) current--;
+    $('taskEditorOverlay').style.display='none';
+    render();
+  }
+};
+
+$('saveTaskBtn').onclick=()=>{
+  const name = $('modalTaskName').value.trim();
+  const h = parseInt($('modalHr').value) || 0;
+  const m = parseInt($('modalMin').value) || 0;
+  const s = parseInt($('modalSec').value) || 0;
+  
+  if(!name) { $('editorError').textContent = "Please enter a task name."; return; }
+  if(h < 0 || h > 23 || m < 0 || m > 59 || s < 0 || s > 59) {
+    $('editorError').textContent = "Invalid: Hrs (0-23), Min/Sec (0-59)";
+    return;
+  }
+  const totalSeconds = (h*3600) + (m*60) + s;
+  if(totalSeconds <= 0) { $('editorError').textContent = "Time must be > 0"; return; }
+  
+  if(editingIndex === null) {
+    tasks.push({text: name, est: totalSeconds, spent: 0, done: false});
+  } else {
+    tasks[editingIndex].text = name;
+    tasks[editingIndex].est = totalSeconds;
+  }
+  
+  $('editorError').textContent = "";
+  $('taskEditorOverlay').style.display='none';
+  render();
+};
+
 function render(){
- const list=$('taskList');list.innerHTML='';
- tasks.forEach((t,i)=>{
-  const d=document.createElement('div');d.className='task';
-  if(i===current){d.classList.add('selected');if(!t.done)d.classList.add('running');}
-  if(t.done)d.classList.add('done');
-  d.innerHTML=`<div>${t.text}</div><div class='meta'>Est ${fmt(t.est)} | Spent ${fmt(t.spent)}</div>`;
-  if(!t.done && paused){
-    const actions=document.createElement('div');actions.className='task-actions';
-    const renameBtn=document.createElement('button');renameBtn.textContent='Rename';
-    renameBtn.onclick=(e)=>{
-      e.stopPropagation(); 
-      if(paused && !t.done){
-        const newText = prompt('Rename task', t.text);
-        if(newText !== null && newText.trim() !== ''){
-          t.text = newText.trim();
-          render();
-        }
-      }
-    };
-    const delBtn=document.createElement('button');delBtn.textContent='Delete';
-    delBtn.onclick=(e)=>{e.stopPropagation(); if(paused){tasks.splice(i,1); if(current===i)current=null; render();}};
-    actions.appendChild(renameBtn);actions.appendChild(delBtn);
-    d.appendChild(actions);
-  }
-  d.onmousedown=(e)=>{if(paused){dragStart(e,i);}};
-  d.onclick=()=>{if(!t.done){current=i;loadTask(i);render();}};
-  list.appendChild(d);
- });
- $('remaining').textContent=tasks.filter(t=>!t.done).length;
- $('doneCount').textContent=tasks.filter(t=>t.done).length;
- updateTaskInputVisibility();
+  const list=$('taskList'); list.innerHTML='';
+  tasks.forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.className='task'+(i===current?' selected':'')+(t.done?' done':'');
+    
+    const content = document.createElement('div');
+    content.className = 'task-content';
+    content.innerHTML = `<b>${t.text}</b><br><small>${fmt(t.est)} est | ${fmt(t.spent)} spent</small>`;
+    content.onclick=()=>{if(!t.done && paused){current=i; loadTask(i); render();}};
+    d.appendChild(content);
+
+    if(!t.done && paused){
+      const editBtn=document.createElement('button');
+      editBtn.className = 'btn-edit-task';
+      editBtn.innerHTML = '✎';
+      editBtn.onclick=(e)=>{e.stopPropagation(); openEdit(i);};
+      d.appendChild(editBtn);
+    }
+    list.appendChild(d);
+  });
+  if(current !== null) loadTask(current);
+  updateUI();
 }
-function dragStart(e,index){
- const dragItem=tasks[index];
- const onMove=moveEvent=>{
-  const list=$('taskList');
-  const y=moveEvent.clientY;
-  let swapIndex=null;
-  Array.from(list.children).forEach((child,i)=>{if(i!==index){
-   const rect=child.getBoundingClientRect();
-   if(y>rect.top && y<rect.bottom){swapIndex=i;}
-  }});
-  if(swapIndex!==null){tasks.splice(index,1);tasks.splice(swapIndex,0,dragItem);if(current===index)current=swapIndex;render();index=swapIndex;}
- };
- const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);};
- document.addEventListener('mousemove',onMove);
- document.addEventListener('mouseup',onUp);
+
+function loadTask(i){
+  if(tasks[i]) {
+    $('currentTaskDisplay').textContent = tasks[i].text;
+    $('countdown').textContent = fmt(Math.max(0, tasks[i].est - tasks[i].spent));
+    $('stopwatch').textContent = new Date(tasks[i].spent*1000).toISOString().substr(11,8);
+  }
 }
-function loadTask(index){
- if(current===null || !tasks[index])return;
- current=index;
- paused=true;
- $('currentTask').textContent=tasks[current].text;
- $('countdown').textContent=fmt(Math.max(0,tasks[current].est-tasks[current].spent));
- $('stopwatch').textContent=new Date(tasks[current].spent*1000).toISOString().substr(11,8);
- $('stateText').textContent='Idle';
- $('startBtn').textContent='Start';
- updateTaskInputVisibility();
-}
+
 $('startBtn').onclick=()=>{
- if(current===null || !tasks[current])return;
- if(paused){
-  paused=false;
-  if(pauseStart){totalPaused+=Math.floor((Date.now()-pauseStart)/1000);pauseStart=0;}
-  $('stateText').textContent='Running';$('startBtn').textContent='Pause';
-  taskStart=Date.now()-tasks[current].spent*1000;
-  tick && clearInterval(tick);
-  tick=setInterval(()=>{
-   if(!tasks[current]){clearInterval(tick);return;}
-   const s=Math.floor((Date.now()-taskStart)/1000);
-   tasks[current].spent=s;
-   $('stopwatch').textContent=new Date(s*1000).toISOString().substr(11,8);
-   $('countdown').textContent=fmt(Math.max(0,tasks[current].est-s));
-   if(s>tasks[current].est && !tasks[current].alerted){console.warn('Task exceeded estimated time!');tasks[current].alerted=true;}
-   render();
-  },1000);
- }else{
-  paused=true;pauseStart=Date.now();clearInterval(tick);$('stateText').textContent='Paused';$('startBtn').textContent='Resume';
- }
- updateTaskInputVisibility();
+  if(current===null) return;
+  if(paused){
+    paused=false; $('stateText').textContent='Running'; $('startBtn').textContent='Pause';
+    taskStart=Date.now()-tasks[current].spent*1000;
+    tick=setInterval(()=>{
+      tasks[current].spent=Math.floor((Date.now()-taskStart)/1000);
+      loadTask(current);
+    },1000);
+  } else {
+    paused=true; clearInterval(tick); $('stateText').textContent='Paused'; $('startBtn').textContent='Resume';
+  }
+  render();
 };
+
 $('completeBtn').onclick=()=>{
- if(current===null || !tasks[current])return;
- clearInterval(tick);paused=true;
- totalActual+=tasks[current].spent;
- tasks[current].done=true;
- const remainingTasks=tasks.filter(t=>!t.done);
- if(remainingTasks.length>0){
-  current=tasks.indexOf(remainingTasks[0]);
-  loadTask(current);
- } else {
-  showStats();
-  current=null;
- }
- render();
+  if(current===null)return;
+  clearInterval(tick); paused=true; tasks[current].done=true;
+  const next=tasks.findIndex(t=>!t.done);
+  if(next!==-1){ current=next; loadTask(current); }
+  else {
+    $('statsSummary').textContent=tasks.map(t=>`• ${t.text}: ${fmt(t.spent)}`).join('\n');
+    $('resultsOverlay').style.display='flex';
+  }
+  render();
 };
-function showStats(){
- clearInterval(tick);
- const table=$('statsTable');
- table.innerHTML='<tr><th>Task</th><th>Estimated</th><th>Actual</th></tr>';
- let totalEst=0,totalSpent=0;
- tasks.forEach(t=>{totalEst+=t.est;totalSpent+=t.spent;table.innerHTML+=`<tr><td>${t.text}</td><td>${fmt(t.est)}</td><td>${fmt(t.spent)}</td></tr>`;});
- const totalFocused = totalActual - totalPaused;
- const wallClock=totalActual;
- $('statsSummary').textContent = 
- `Tasks completed: ${tasks.length}
-Total estimated time: ${fmt(totalEst)}
-Total actual time spent: ${fmt(totalActual)}
-Total focused time (excluding pauses): ${fmt(totalFocused)}
-Total paused time: ${fmt(totalPaused)}
-Total wall-clock time: ${fmt(wallClock)}`;
- $('resultsOverlay').style.display='flex';
-}
-$('closeStatsBtn').onclick=()=>{
- clearInterval(tick);
- tasks=[];current=null;paused=true;tick=null;taskStart=0;pauseStart=0;totalPaused=0;totalActual=0;
- $('taskList').innerHTML='';
- $('currentTask').textContent='No task selected';
- $('countdown').textContent='00:00';
- $('stopwatch').textContent='00:00:00';
- $('stateText').textContent='Idle';
- $('startBtn').textContent='Start';
- $('remaining').textContent='0';
- $('doneCount').textContent='0';
- $('resultsOverlay').style.display='none';
- updateTaskInputVisibility();
-};
-</script>
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
+
+$('closeStatsBtn').onclick=()=>{ tasks=[]; current=null; $('resultsOverlay').style.display='none'; render(); };
 </script>
 </body>
-</html>
+</html>```
 
