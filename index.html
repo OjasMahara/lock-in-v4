@@ -8,6 +8,7 @@
 :root {
   --bg: #111827; --card: #1f2937; --muted: #94a3b8; --accent: #22c55e;
   --glass: rgba(255, 255, 255, .05); --border: rgba(255, 255, 255, .1);
+  --error: #ef4444;
 }
 
 html, body {
@@ -17,28 +18,20 @@ html, body {
 
 body { 
   display: flex; justify-content: center; align-items: flex-start; 
-  padding: 16px; 
-  box-sizing: border-box;
+  padding: 16px; box-sizing: border-box;
 }
 
 .app {
   max-width: 600px; width: 100%; margin: 10px auto; padding: 24px;
   border-radius: 16px; background: var(--card);
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
+  box-sizing: border-box; display: flex; flex-direction: column;
 }
 
-header { 
-  display: flex; 
-  flex-direction: column;
-  margin-bottom: 24px; 
-}
+header { display: flex; flex-direction: column; margin-bottom: 24px; }
 h1 { margin: 0; font-size: 24px; color: var(--accent); }
 .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
-/* Responsive "Blob" Button Styling */
 button {
   font-size: 16px; padding: 12px; border-radius: 10px;
   border: 1px solid var(--border); background: #111827; color: inherit;
@@ -46,19 +39,12 @@ button {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
   outline: none;
 }
-
-button:active {
-  transform: scale(1.08);
-  filter: brightness(1.2);
-}
-
+button:active { transform: scale(1.08); filter: brightness(1.2); }
 input {
   font-size: 16px; padding: 12px; border-radius: 10px;
   border: 1px solid var(--border); background: #111827; color: inherit;
   width: 100%; box-sizing: border-box;
 }
-
-button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); transform: none !important; }
 
 .main-add-container { margin-bottom: 24px; }
 .btn-add-task { width: 100%; background: var(--accent); color: #000; font-weight: 700; border: none; }
@@ -68,63 +54,89 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); trans
   padding: 16px; border-radius: 12px; border: 1px solid var(--border);
   background: #111827; display: flex; justify-content: space-between;
   align-items: center; gap: 12px; transition: all 0.2s ease; overflow: hidden;
-  cursor: pointer;
+  cursor: grab; user-select: none;
 }
 
-/* Make task cards feel responsive too */
-.task:active:not(.selected) {
-  transform: scale(0.98);
-}
-
+.task.dragging { opacity: 0.4; border: 2px dashed var(--accent); background: transparent; transform: scale(0.95); }
 .task-content { flex: 1; min-width: 0; overflow-wrap: break-word; }
 .task.selected { border: 2px solid var(--accent); box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
 .task.done { background: #1f2937; border-color: #374151; color: #64748b; text-decoration: line-through; opacity: 0.7; }
-
-.btn-edit-task { padding: 8px 10px; font-size: 14px; background: transparent; border: 1px solid var(--border); }
 
 .timer-grid { display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; margin-bottom: 10px; }
 .timer-card { background: var(--glass); padding: 15px; border-radius: 14px; border: 1px solid var(--border); text-align: center; }
 .time { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.actions { display: flex; gap: 12px; margin-top: 20px; margin-bottom: 24px;}
+.actions { display: none; gap: 12px; margin-top: 20px; margin-bottom: 24px;}
 .actions button { flex: 1; padding: 16px; font-size: 18px; }
 button.primary { background: var(--accent); border: none; color: #000; font-weight: 700; }
 
-footer {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  text-align: center;
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.5px;
-}
-
 .overlay {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9);
   display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+  backdrop-filter: blur(4px);
 }
-.overlay-card { background: var(--card); padding: 24px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; box-sizing: border-box; }
+.overlay-card { background: var(--card); padding: 24px; border-radius: 16px; width: 100%; max-width: 440px; text-align: center; box-sizing: border-box; }
 
-.picker-container { display: flex; justify-content: center; gap: 10px; margin: 15px 0; }
-.picker-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
-.picker-col span { font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
-.picker-col input { width: 100%; height: 50px; text-align: center; font-size: 20px; border: 2px solid var(--accent); }
+.hero-title { font-size: 48px; font-weight: 900; letter-spacing: -3px; color: #fff; font-style: italic; margin-bottom: 10px; }
 
-@media (max-width: 600px) {
-  body { padding: 12px; }
-  .app { margin: 0; padding: 20px 16px; }
-  .timer-grid { grid-template-columns: 1fr; }
-  .time { font-size: 24px; }
+.insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+.insight-item { background: #111827; padding: 16px; border-radius: 12px; border: 1px solid var(--border); text-align: left; position: relative; }
+.insight-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.insight-val { font-size: 22px; font-weight: 800; margin-top: 6px; color: #fff; }
+
+.info-wrapper { position: relative; display: inline-flex; align-items: center; }
+.info-icon { 
+  cursor: pointer; color: var(--accent); font-size: 10px; 
+  background: rgba(34, 197, 94, 0.1); width: 14px; height: 14px; 
+  display: flex; align-items: center; justify-content: center; 
+  border-radius: 50%; border: 1px solid rgba(34, 197, 94, 0.3);
+  font-weight: bold;
 }
+.speech-bubble {
+  position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: #000; padding: 8px 12px; border-radius: 8px;
+  font-size: 11px; width: 160px; text-align: center; line-height: 1.3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: 600;
+  display: none; pointer-events: none; z-index: 20;
+}
+.speech-bubble::after {
+  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border-width: 6px; border-style: solid; border-color: var(--accent) transparent transparent transparent;
+}
+
+.task-breakdown { text-align: left; max-height: 180px; overflow-y: auto; margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+.breakdown-row { display: flex; justify-content: space-between; font-size: 13px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.breakdown-row:last-child { border-bottom: none; }
+
+footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; font-size: 11px; color: var(--muted); }
+
+.smart-picker { margin: 10px 0 20px 0; }
+.smart-picker label { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 6px; }
+.smart-picker input {
+  width: 100%; height: 56px; text-align: center; font-size: 28px; 
+  font-family: 'Courier New', monospace; letter-spacing: 2px;
+  border: 2px solid var(--accent); background: #111827; color: var(--accent);
+  border-radius: 12px;
+}
+.smart-picker input::placeholder { color: #374151; }
+
+#modalTaskName { margin-bottom: 10px; }
 </style>
 </head>
 <body>
 
+<div id="welcomeScreen" class="overlay" style="display: flex;">
+  <div class="overlay-card">
+    <div class="hero-title">LOCK-IN</div>
+    <p class="subtitle" style="font-size: 14px; margin-bottom: 30px; line-height: 1.6;">High-integrity performance auditor.<br>Observation mode active.</p>
+    <button onclick="closeWelcome()" class="primary" style="width: 100%; padding: 18px;">Continue</button>
+  </div>
+</div>
+
 <div class="app">
   <header>
     <h1>🔒 Lock-In Tool</h1>
-    <div class="subtitle">v4</div>
+    <div class="subtitle">v4.5 [Focused]</div>
   </header>
 
   <div class="main-add-container" id="addWrapper">
@@ -135,7 +147,7 @@ footer {
 
   <div id="timerGrid" class="timer-grid">
     <div class="timer-card">
-      <div id="currentTaskDisplay" style="font-size: 12px; color: var(--muted); margin-bottom: 5px; overflow: hidden; text-overflow: ellipsis;">No task</div>
+      <div id="currentTaskDisplay" style="font-size: 12px; color: var(--muted); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">No task</div>
       <div class="time" id="countdown">00:00:00</div>
     </div>
     <div class="timer-card">
@@ -144,50 +156,83 @@ footer {
     </div>
   </div>
 
-  <div class="actions">
+  <div class="actions" id="actionButtons">
     <button id="startBtn" class="primary">Start</button>
     <button id="completeBtn">Complete</button>
   </div>
 
-  <footer>
-    by sajo moanne
-  </footer>
+  <button id="endSessionBtn" style="display:none; margin-top: 12px; border-color: var(--error); color: var(--error); width: 100%;">End Session Early</button>
+
+  <footer>by sajo moanne</footer>
 </div>
 
-<!-- Task Editor Widget -->
 <div id="taskEditorOverlay" class="overlay">
   <div class="overlay-card">
-    <h3 id="modalTitle" style="margin-top:0">Task Details</h3>
-    <input id="modalTaskName" type="text" placeholder="Task name..." style="margin-bottom: 15px;">
+    <h3 id="modalTitle" style="margin-top:0; margin-bottom:16px;">Task Details</h3>
+    <input id="modalTaskName" type="text" placeholder="task name">
     
-    <div class="picker-container">
-      <div class="picker-col"><span>Hrs</span><input id="modalHr" type="number" value="0" min="0" max="23"></div>
-      <div class="picker-col"><span>Min</span><input id="modalMin" type="number" value="0" min="0" max="59"></div>
-      <div class="picker-col"><span>Sec</span><input id="modalSec" type="number" value="0" min="0" max="59"></div>
+    <div class="smart-picker">
+      <label>Estimate (HH:MM:SS)</label>
+      <input id="smartTimeInput" type="text" value="00:00:00" maxlength="8">
     </div>
-    
-    <div id="editorError" style="color: #ef4444; font-size: 12px; height: 18px; margin-bottom: 15px;"></div>
-    
+
     <div style="display:flex; flex-direction: column; gap: 10px;">
       <div style="display:flex; gap:10px;">
         <button id="cancelEditor" style="flex:1; background:#374151; border:none;">Cancel</button>
         <button id="saveTaskBtn" style="flex:1; background:var(--accent); color:#000; border:none; font-weight: 700;">Confirm</button>
       </div>
-      <button id="deleteTaskBtn" style="background:transparent; color:#ef4444; border:1px solid #ef4444; font-size: 14px; display: none;">Delete / Scrap Task</button>
+      <button id="deleteTaskBtn" style="background:transparent; color:var(--error); border:1px solid var(--error); font-size: 14px; display: none;">Delete Task</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmEndOverlay" class="overlay">
+  <div class="overlay-card">
+    <h3 style="margin-top:0">End Session?</h3>
+    <p class="subtitle" style="margin-bottom: 24px;">This will stop all timers and calculate final insights.</p>
+    <div style="display:flex; gap:10px;">
+      <button onclick="closeConfirm()" style="flex:1; background:#374151; border:none;">Cancel</button>
+      <button id="confirmEndBtn" style="flex:1; background:var(--error); color:#fff; border:none; font-weight: 700;">Yes, End Session</button>
     </div>
   </div>
 </div>
 
 <div id="resultsOverlay" class="overlay">
-  <div class="overlay-card">
-    <h3>Session Over</h3>
-    <div id="statsSummary" style="text-align:left; margin-bottom:20px; white-space:pre-line; font-size:14px;"></div>
-    <button id="closeStatsBtn" class="primary" style="width:100%">New Session</button>
+  <div class="overlay-card" style="max-width: 500px;">
+    <h3 style="margin:0; color:var(--accent)">Session Insights</h3>
+    <div class="insights-grid">
+      <div class="insight-item">
+        <div class="insight-label">Total Time</div>
+        <div class="insight-val" id="resTotal">00:00:00</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-label">Focused Time</div>
+        <div class="insight-val" id="resFocused">00:00:00</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-label">Paused Time</div>
+        <div class="insight-val" id="resPaused">00:00:00</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-label">
+          Focus Ratio
+          <div class="info-wrapper">
+            <span class="info-icon" onclick="toggleSpeechBubble()">i</span>
+            <div id="speechBubble" class="speech-bubble">focused time / total time</div>
+          </div>
+        </div>
+        <div class="insight-val" id="resRatio">0%</div>
+      </div>
+    </div>
+    <div class="task-breakdown" id="resBreakdown"></div>
+    <button id="closeStatsBtn" class="primary" style="width:100%; margin-top:20px">New Session</button>
   </div>
 </div>
 
 <script>
-let tasks=[],current=null,paused=true,tick=null,taskStart=0,editingIndex=null;
+let tasks=[], current=null, paused=true, tick=null, taskStart=0, editingIndex=null;
+let sessionStartTime=null, totalFocusedSeconds=0;
+
 const $=id=>document.getElementById(id);
 
 const fmt=(s)=>{
@@ -197,16 +242,124 @@ const fmt=(s)=>{
   return `${h>0?String(h).padStart(2,'0')+':':''}${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 };
 
+// Smart Input Logic (HH:MM:SS - Right to Left)
+const timeInput = $('smartTimeInput');
+timeInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace') {
+        e.preventDefault();
+        let val = timeInput.value.replace(/\D/g, '');
+        val = val.slice(0, -1).padStart(6, '0');
+        updateTimeDisplay(val);
+    } else if (/^\d$/.test(e.key)) {
+        e.preventDefault();
+        let val = timeInput.value.replace(/\D/g, '');
+        val = (val + e.key).slice(-6);
+        updateTimeDisplay(val);
+    } else if (e.key !== 'Tab') {
+        e.preventDefault();
+    }
+});
+
+function updateTimeDisplay(digits) {
+    const h = digits.slice(0, 2);
+    const m = digits.slice(2, 4);
+    const s = digits.slice(4, 6);
+    timeInput.value = `${h}:${m}:${s}`;
+}
+
+// Helper to convert HH:MM:SS string to total seconds
+function timeToSeconds(str) {
+  const parts = str.split(':').map(p => parseInt(p) || 0);
+  if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+  return 0;
+}
+
+function toggleSpeechBubble() {
+  const bubble = $('speechBubble');
+  bubble.style.display = (bubble.style.display === 'block') ? 'none' : 'block';
+  if(bubble.style.display === 'block') {
+    setTimeout(() => { bubble.style.display = 'none'; }, 5000);
+  }
+}
+
+function closeWelcome() { $('welcomeScreen').style.display = 'none'; }
+function closeConfirm() { $('confirmEndOverlay').style.display = 'none'; }
+
+$('endSessionBtn').onclick = () => { $('confirmEndOverlay').style.display = 'flex'; };
+$('confirmEndBtn').onclick = () => { closeConfirm(); endSession(); };
+
 function updateUI(){
   $('addWrapper').style.display = (paused || current===null) ? 'block' : 'none';
   $('timerGrid').style.display = (current !== null) ? 'grid' : 'none';
+  $('endSessionBtn').style.display = sessionStartTime ? 'block' : 'none';
+  $('actionButtons').style.display = (current !== null) ? 'flex' : 'none';
+}
+
+function render(){
+  const list=$('taskList'); list.innerHTML='';
+  tasks.forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.className='task'+(i===current?' selected':'')+(t.done?' done':'');
+    d.draggable = (paused && !t.done);
+    
+    d.onclick = () => {
+      if(!t.done && paused) {
+        current = i;
+        loadTask(i);
+        render();
+      }
+    };
+
+    d.ondragstart = (e) => {
+      d.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', i);
+    };
+    d.ondragend = () => d.classList.remove('dragging');
+    d.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+    d.ondrop = (e) => {
+      e.preventDefault();
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIdx = i;
+      if(fromIdx === toIdx) return;
+      const movedItem = tasks.splice(fromIdx, 1)[0];
+      tasks.splice(toIdx, 0, movedItem);
+      if(current === fromIdx) current = toIdx;
+      else if(current > fromIdx && current <= toIdx) current--;
+      else if(current < fromIdx && current >= toIdx) current++;
+      render();
+    };
+
+    const content = document.createElement('div');
+    content.className = 'task-content';
+    content.innerHTML = `<b>${t.text}</b><br><small>${fmt(t.est)} est | ${fmt(t.spent)} spent</small>`;
+    d.appendChild(content);
+
+    if(!t.done && paused){
+      const editBtn=document.createElement('button');
+      editBtn.className = 'btn-edit-task'; editBtn.innerHTML = '✎';
+      editBtn.style.cssText = "background:transparent; border:none; cursor:pointer; position:relative; z-index:10; font-size:18px;";
+      editBtn.onclick=(e)=>{
+        e.stopPropagation();
+        openEdit(i);
+      };
+      d.appendChild(editBtn);
+    }
+    list.appendChild(d);
+  });
+  if(current !== null) {
+    loadTask(current);
+    if(!paused) $('startBtn').textContent = 'Pause';
+    else $('startBtn').textContent = tasks[current].spent > 0 ? 'Resume' : 'Start';
+  }
+  updateUI();
 }
 
 $('openAddModalBtn').onclick=()=>{
   editingIndex = null;
   $('modalTitle').textContent = "Add New Task";
-  $('modalTaskName').value = "";
-  $('modalHr').value = 0; $('modalMin').value = 0; $('modalSec').value = 0;
+  $('modalTaskName').value = ""; 
+  $('smartTimeInput').value = "00:00:00"; 
   $('deleteTaskBtn').style.display = 'none';
   $('taskEditorOverlay').style.display='flex';
 };
@@ -216,95 +369,66 @@ function openEdit(index){
   const t = tasks[index];
   $('modalTitle').textContent = "Edit Task";
   $('modalTaskName').value = t.text;
-  $('modalHr').value = Math.floor(t.est / 3600);
-  $('modalMin').value = Math.floor((t.est % 3600) / 60);
-  $('modalSec').value = t.est % 60;
+  
+  const h = Math.floor(t.est / 3600);
+  const m = Math.floor((t.est % 3600) / 60);
+  const s = t.est % 60;
+  $('smartTimeInput').value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  
   $('deleteTaskBtn').style.display = 'block';
   $('taskEditorOverlay').style.display='flex';
 }
 
-$('cancelEditor').onclick=()=>{$('taskEditorOverlay').style.display='none';};
+$('saveTaskBtn').onclick=()=>{
+  const name = $('modalTaskName').value.trim();
+  const timeStr = $('smartTimeInput').value;
+  if(!name) return;
+  const total = timeToSeconds(timeStr);
+  if(total <= 0) return;
+  
+  if(editingIndex === null) {
+    tasks.push({text:name, est:total, spent:0, done:false});
+  } else { 
+    tasks[editingIndex].text=name; 
+    tasks[editingIndex].est=total; 
+  }
+  
+  $('taskEditorOverlay').style.display='none'; 
+  render();
+};
 
+$('cancelEditor').onclick=()=>{$('taskEditorOverlay').style.display='none';};
 $('deleteTaskBtn').onclick=()=>{
   if(editingIndex !== null) {
     tasks.splice(editingIndex, 1);
     if(current === editingIndex) current = null;
     else if(current > editingIndex) current--;
-    $('taskEditorOverlay').style.display='none';
-    render();
+    $('taskEditorOverlay').style.display='none'; render();
   }
 };
-
-$('saveTaskBtn').onclick=()=>{
-  const name = $('modalTaskName').value.trim();
-  const h = parseInt($('modalHr').value) || 0;
-  const m = parseInt($('modalMin').value) || 0;
-  const s = parseInt($('modalSec').value) || 0;
-  
-  if(!name) { $('editorError').textContent = "Please enter a task name."; return; }
-  if(h < 0 || h > 23 || m < 0 || m > 59 || s < 0 || s > 59) {
-    $('editorError').textContent = "Invalid: Hrs (0-23), Min/Sec (0-59)";
-    return;
-  }
-  const totalSeconds = (h*3600) + (m*60) + s;
-  if(totalSeconds <= 0) { $('editorError').textContent = "Time must be > 0"; return; }
-  
-  if(editingIndex === null) {
-    tasks.push({text: name, est: totalSeconds, spent: 0, done: false});
-  } else {
-    tasks[editingIndex].text = name;
-    tasks[editingIndex].est = totalSeconds;
-  }
-  
-  $('editorError').textContent = "";
-  $('taskEditorOverlay').style.display='none';
-  render();
-};
-
-function render(){
-  const list=$('taskList'); list.innerHTML='';
-  tasks.forEach((t,i)=>{
-    const d=document.createElement('div');
-    d.className='task'+(i===current?' selected':'')+(t.done?' done':'');
-    
-    const content = document.createElement('div');
-    content.className = 'task-content';
-    content.innerHTML = `<b>${t.text}</b><br><small>${fmt(t.est)} est | ${fmt(t.spent)} spent</small>`;
-    content.onclick=()=>{if(!t.done && paused){current=i; loadTask(i); render();}};
-    d.appendChild(content);
-
-    if(!t.done && paused){
-      const editBtn=document.createElement('button');
-      editBtn.className = 'btn-edit-task';
-      editBtn.innerHTML = '✎';
-      editBtn.onclick=(e)=>{e.stopPropagation(); openEdit(i);};
-      d.appendChild(editBtn);
-    }
-    list.appendChild(d);
-  });
-  if(current !== null) loadTask(current);
-  updateUI();
-}
 
 function loadTask(i){
   if(tasks[i]) {
     $('currentTaskDisplay').textContent = tasks[i].text;
     $('countdown').textContent = fmt(Math.max(0, tasks[i].est - tasks[i].spent));
-    $('stopwatch').textContent = new Date(tasks[i].spent*1000).toISOString().substr(11,8);
+    $('stopwatch').textContent = fmt(tasks[i].spent);
   }
 }
 
 $('startBtn').onclick=()=>{
   if(current===null) return;
   if(paused){
-    paused=false; $('stateText').textContent='Running'; $('startBtn').textContent='Pause';
+    paused=false; $('stateText').textContent='Running'; 
+    if(!sessionStartTime) sessionStartTime = Date.now();
     taskStart=Date.now()-tasks[current].spent*1000;
     tick=setInterval(()=>{
+      const oldSpent = tasks[current].spent;
       tasks[current].spent=Math.floor((Date.now()-taskStart)/1000);
+      totalFocusedSeconds += (tasks[current].spent - oldSpent);
       loadTask(current);
     },1000);
   } else {
-    paused=true; clearInterval(tick); $('stateText').textContent='Paused'; $('startBtn').textContent='Resume';
+    paused=true; clearInterval(tick); $('stateText').textContent='Paused'; 
   }
   render();
 };
@@ -315,14 +439,43 @@ $('completeBtn').onclick=()=>{
   const next=tasks.findIndex(t=>!t.done);
   if(next!==-1){ current=next; loadTask(current); }
   else {
-    $('statsSummary').textContent=tasks.map(t=>`• ${t.text}: ${fmt(t.spent)}`).join('\n');
-    $('resultsOverlay').style.display='flex';
+    current=null;
+    endSession();
   }
   render();
 };
 
-$('closeStatsBtn').onclick=()=>{ tasks=[]; current=null; $('resultsOverlay').style.display='none'; render(); };
+function endSession() {
+  clearInterval(tick);
+  paused = true;
+  const endTime = Date.now();
+  const totalSessionElapsed = sessionStartTime ? Math.floor((endTime - sessionStartTime) / 1000) : 0;
+  const pausedTime = Math.max(0, totalSessionElapsed - totalFocusedSeconds);
+  const ratio = totalSessionElapsed > 0 ? Math.round((totalFocusedSeconds / totalSessionElapsed) * 100) : 0;
+
+  $('resTotal').textContent = fmt(totalSessionElapsed);
+  $('resFocused').textContent = fmt(totalFocusedSeconds);
+  $('resPaused').textContent = fmt(pausedTime);
+  $('resRatio').textContent = ratio + '%';
+
+  const breakdown = $('resBreakdown');
+  breakdown.innerHTML = '<div style="font-weight:700; font-size:12px; margin-bottom:10px; color:var(--muted); letter-spacing:1px;">TASK SUMMARY</div>';
+  tasks.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'breakdown-row';
+    row.innerHTML = `<span>${t.text}</span> <span style="font-family:monospace; color:${t.done?'var(--accent)':'var(--muted)'}">${fmt(t.spent)}</span>`;
+    breakdown.appendChild(row);
+  });
+
+  $('resultsOverlay').style.display='flex';
+}
+
+$('closeStatsBtn').onclick=()=>{ 
+  tasks=[]; current=null; sessionStartTime=null; totalFocusedSeconds=0;
+  $('resultsOverlay').style.display='none'; render(); 
+};
+
+render();
 </script>
 </body>
-</html>```
-
+</html>
