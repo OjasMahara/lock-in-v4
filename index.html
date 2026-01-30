@@ -57,7 +57,6 @@ input {
   cursor: grab; user-select: none;
 }
 
-.task.dragging { opacity: 0.4; border: 2px dashed var(--accent); background: transparent; transform: scale(0.95); }
 .task-content { flex: 1; min-width: 0; overflow-wrap: break-word; }
 .task.selected { border: 2px solid var(--accent); box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); }
 .task.done { background: #1f2937; border-color: #374151; color: #64748b; text-decoration: line-through; opacity: 0.7; }
@@ -92,35 +91,56 @@ button.primary { background: var(--accent); border: none; color: #000; font-weig
   border-radius: 50%; border: 1px solid rgba(34, 197, 94, 0.3);
   font-weight: bold;
 }
-.speech-bubble {
-  position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
-  background: var(--accent); color: #000; padding: 8px 12px; border-radius: 8px;
-  font-size: 11px; width: 160px; text-align: center; line-height: 1.3;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: 600;
-  display: none; pointer-events: none; z-index: 20;
+
+/* Bottom Sheet */
+.bottom-sheet {
+  position: fixed; bottom: -100%; left: 0; right: 0;
+  background: var(--card); border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0; padding: 24px; z-index: 2000;
+  transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
 }
-.speech-bubble::after {
-  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-  border-width: 6px; border-style: solid; border-color: var(--accent) transparent transparent transparent;
+.bottom-sheet.active { bottom: 0; }
+.sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: none; z-index: 1999; backdrop-filter: blur(2px);
 }
+.sheet-overlay.active { display: block; }
+.handle { width: 40px; height: 4px; background: #374151; border-radius: 2px; margin: -12px auto 20px auto; }
+
+/* Modal New UI Components */
+.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; text-align: left; }
+.setting-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+
+.toggle-switch {
+  position: relative; display: inline-block; width: 50px; height: 26px;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; inset: 0; background-color: #374151;
+  transition: .4s; border-radius: 34px;
+}
+.slider:before {
+  position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+  background-color: white; transition: .4s; border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--accent); }
+input:checked + .slider:before { transform: translateX(24px); }
+
+.range-picker { width: 100%; margin: 8px 0; accent-color: var(--accent); }
 
 .task-breakdown { text-align: left; max-height: 180px; overflow-y: auto; margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; }
 .breakdown-row { display: flex; justify-content: space-between; font-size: 13px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.breakdown-row:last-child { border-bottom: none; }
 
 footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; font-size: 11px; color: var(--muted); }
 
 .smart-picker { margin: 10px 0 20px 0; }
-.smart-picker label { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 6px; }
 .smart-picker input {
   width: 100%; height: 56px; text-align: center; font-size: 28px; 
-  font-family: 'Courier New', monospace; letter-spacing: 2px;
+  font-family: monospace; letter-spacing: 2px;
   border: 2px solid var(--accent); background: #111827; color: var(--accent);
   border-radius: 12px;
 }
-.smart-picker input::placeholder { color: #374151; }
-
-#modalTaskName { margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -136,7 +156,7 @@ footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border
 <div class="app">
   <header>
     <h1>🔒 Lock-In Tool</h1>
-    <div class="subtitle">v4.5 [Focused]</div>
+    <div class="subtitle">v4.6 [Integrity Engine]</div>
   </header>
 
   <div class="main-add-container" id="addWrapper">
@@ -147,7 +167,7 @@ footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border
 
   <div id="timerGrid" class="timer-grid">
     <div class="timer-card">
-      <div id="currentTaskDisplay" style="font-size: 12px; color: var(--muted); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">No task</div>
+      <div id="currentTaskDisplay" style="font-size: 12px; color: var(--muted); margin-bottom: 5px;">No task</div>
       <div class="time" id="countdown">00:00:00</div>
     </div>
     <div class="timer-card">
@@ -166,17 +186,36 @@ footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border
   <footer>by sajo moanne</footer>
 </div>
 
+<!-- Task Modal -->
 <div id="taskEditorOverlay" class="overlay">
   <div class="overlay-card">
     <h3 id="modalTitle" style="margin-top:0; margin-bottom:16px;">Task Details</h3>
     <input id="modalTaskName" type="text" placeholder="task name">
     
     <div class="smart-picker">
-      <label>Estimate (HH:MM:SS)</label>
+      <div class="setting-label" style="margin-bottom: 8px;">Estimate (HH:MM:SS)</div>
       <input id="smartTimeInput" type="text" value="00:00:00" maxlength="8">
     </div>
 
-    <div style="display:flex; flex-direction: column; gap: 10px;">
+    <!-- Mode Switch -->
+    <div class="setting-row">
+      <div class="setting-label">Work Mode: <span id="modeDisplay" style="color:var(--accent)">ONLINE</span></div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="workModeToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Pulse Slider -->
+    <div class="setting-row" style="flex-direction: column; align-items: flex-start;">
+      <div class="setting-label">Pulse Frequency: <span id="pulseDisplay" style="color:var(--accent)">15m</span></div>
+      <input type="range" id="pulseRange" class="range-picker" min="0" max="60" step="5" value="15">
+      <div style="width:100%; display:flex; justify-content:space-between; font-size:10px; color:var(--muted)">
+        <span>OFF</span><span>30m</span><span>60m</span>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction: column; gap: 10px; margin-top: 20px;">
       <div style="display:flex; gap:10px;">
         <button id="cancelEditor" style="flex:1; background:#374151; border:none;">Cancel</button>
         <button id="saveTaskBtn" style="flex:1; background:var(--accent); color:#000; border:none; font-weight: 700;">Confirm</button>
@@ -186,6 +225,16 @@ footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border
   </div>
 </div>
 
+<!-- Bottom Sheet -->
+<div id="sheetOverlay" class="sheet-overlay" onclick="toggleSheet()"></div>
+<div id="bottomSheet" class="bottom-sheet">
+  <div class="handle"></div>
+  <h4 id="sheetTitle" style="margin: 0 0 10px 0; color: var(--accent);">Formula Explanation</h4>
+  <p id="sheetBody" style="font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0;"></p>
+  <button onclick="toggleSheet()" style="width: 100%; margin-top: 20px; background: var(--card); border: 1px solid var(--border);">Close</button>
+</div>
+
+<!-- Confirm End -->
 <div id="confirmEndOverlay" class="overlay">
   <div class="overlay-card">
     <h3 style="margin-top:0">End Session?</h3>
@@ -197,285 +246,350 @@ footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border
   </div>
 </div>
 
+<!-- Results -->
 <div id="resultsOverlay" class="overlay">
   <div class="overlay-card" style="max-width: 500px;">
     <h3 style="margin:0; color:var(--accent)">Session Insights</h3>
     <div class="insights-grid">
       <div class="insight-item">
-        <div class="insight-label">Total Time</div>
+        <div class="insight-label">Session Duration</div>
         <div class="insight-val" id="resTotal">00:00:00</div>
       </div>
       <div class="insight-item">
-        <div class="insight-label">Focused Time</div>
+        <div class="insight-label">Work Time</div>
         <div class="insight-val" id="resFocused">00:00:00</div>
       </div>
       <div class="insight-item">
-        <div class="insight-label">Paused Time</div>
+        <div class="insight-label">Sidelined Time <span class="info-icon" onclick="openSheet('sidelined')">i</span></div>
         <div class="insight-val" id="resPaused">00:00:00</div>
       </div>
       <div class="insight-item">
-        <div class="insight-label">
-          Focus Ratio
-          <div class="info-wrapper">
-            <span class="info-icon" onclick="toggleSpeechBubble()">i</span>
-            <div id="speechBubble" class="speech-bubble">focused time / total time</div>
-          </div>
-        </div>
+        <div class="insight-label">Focus Ratio <span class="info-icon" onclick="openSheet('focus')">i</span></div>
         <div class="insight-val" id="resRatio">0%</div>
       </div>
     </div>
+    <div class="task-breakdown" id="pulseTimeline">
+      <h4 style="margin-top:0">Pulse Timeline</h4>
+    </div>
+
     <div class="task-breakdown" id="resBreakdown"></div>
     <button id="closeStatsBtn" class="primary" style="width:100%; margin-top:20px">New Session</button>
   </div>
 </div>
 
+<!-- Pulse Popup -->
+<div id="pulsePopup" class="overlay">
+  <div class="overlay-card">
+    <h3>You there?</h3>
+    <button id="pulseYesBtn" class="primary" style="width:100%">Yes</button>
+  </div>
+</div>
+
 <script>
-let tasks=[], current=null, paused=true, tick=null, taskStart=0, editingIndex=null;
-let sessionStartTime=null, totalFocusedSeconds=0;
+let tasks = [], current = null, paused = true, tick = null;
+let sessionStartTimestamp = null, sessionEndTimestamp = null;
+let totalFocusedSeconds = 0, editingIndex = null;
 
-const $=id=>document.getElementById(id);
+// ==== PULSE SYSTEM STATE (ADDITIVE) ====
+let pulseTimer = null;
+let pulseLog = [];
+let lastPulseAt = null;
 
-const fmt=(s)=>{
-  const h=Math.floor(s/3600);
-  const m=Math.floor((s%3600)/60);
-  const sec=s%60;
-  return `${h>0?String(h).padStart(2,'0')+':':''}${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+const $ = id => document.getElementById(id);
+
+const fmt = (s) => {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h > 0 ? String(h).padStart(2, '0') + ':' : ''}${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 };
 
-// Smart Input Logic (HH:MM:SS - Right to Left)
+// Modal UI Logic
+$('workModeToggle').onchange = (e) => {
+  $('modeDisplay').textContent = e.target.checked ? 'ONLINE' : 'OFFLINE';
+};
+$('pulseRange').oninput = (e) => {
+  const v = parseInt(e.target.value);
+  $('pulseDisplay').textContent = v === 0 ? 'OFF' : v + 'm';
+};
+
+// Smart Input
 const timeInput = $('smartTimeInput');
 timeInput.addEventListener('keydown', (e) => {
     if (e.key === 'Backspace') {
         e.preventDefault();
-        let val = timeInput.value.replace(/\D/g, '');
-        val = val.slice(0, -1).padStart(6, '0');
+        let val = timeInput.value.replace(/\D/g, '').slice(0, -1).padStart(6, '0');
         updateTimeDisplay(val);
     } else if (/^\d$/.test(e.key)) {
         e.preventDefault();
-        let val = timeInput.value.replace(/\D/g, '');
-        val = (val + e.key).slice(-6);
+        let val = (timeInput.value.replace(/\D/g, '') + e.key).slice(-6);
         updateTimeDisplay(val);
-    } else if (e.key !== 'Tab') {
-        e.preventDefault();
-    }
+    } else if (e.key !== 'Tab') { e.preventDefault(); }
 });
 
 function updateTimeDisplay(digits) {
-    const h = digits.slice(0, 2);
-    const m = digits.slice(2, 4);
-    const s = digits.slice(4, 6);
+    const h = digits.slice(0, 2), m = digits.slice(2, 4), s = digits.slice(4, 6);
     timeInput.value = `${h}:${m}:${s}`;
 }
 
-// Helper to convert HH:MM:SS string to total seconds
 function timeToSeconds(str) {
-  const parts = str.split(':').map(p => parseInt(p) || 0);
-  if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
-  return 0;
+  const p = str.split(':').map(x => parseInt(x) || 0);
+  return (p[0] * 3600) + (p[1] * 60) + p[2];
 }
 
-function toggleSpeechBubble() {
-  const bubble = $('speechBubble');
-  bubble.style.display = (bubble.style.display === 'block') ? 'none' : 'block';
-  if(bubble.style.display === 'block') {
-    setTimeout(() => { bubble.style.display = 'none'; }, 5000);
+function toggleSheet() {
+  $('bottomSheet').classList.toggle('active');
+  $('sheetOverlay').classList.toggle('active');
+}
+
+function openSheet(type) {
+  const title = $('sheetTitle'), body = $('sheetBody');
+  if (type === 'focus') {
+    title.textContent = "Focus Ratio";
+    body.innerHTML = "Formula: <strong style='color:#fff'>focused time / total time</strong><br><br>Total time includes all pauses and gaps.";
+  } else if (type === 'sidelined') {
+    title.textContent = "Sidelined Time";
+    body.innerHTML = "Tracks time where the session was running, but you were not working on a task (e.g., pauses or switching).";
+  }
+  toggleSheet();
+}
+
+function closeWelcome() {
+  $('welcomeScreen').style.display = 'none'; 
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
   }
 }
-
-function closeWelcome() { $('welcomeScreen').style.display = 'none'; }
 function closeConfirm() { $('confirmEndOverlay').style.display = 'none'; }
 
 $('endSessionBtn').onclick = () => { $('confirmEndOverlay').style.display = 'flex'; };
 $('confirmEndBtn').onclick = () => { closeConfirm(); endSession(); };
 
-function updateUI(){
-  $('addWrapper').style.display = (paused || current===null) ? 'block' : 'none';
-  $('timerGrid').style.display = (current !== null) ? 'grid' : 'none';
-  $('endSessionBtn').style.display = sessionStartTime ? 'block' : 'none';
-  $('actionButtons').style.display = (current !== null) ? 'flex' : 'none';
+function firePulse(task) {
+  const now = Date.now();
+
+  const pulseEntry = {
+    task: task.text,
+    time: now,
+    answered: false
+  };
+
+  pulseLog.push(pulseEntry);
+
+  // In-app pulse popup
+  if (document.visibilityState === 'visible') {
+    showPulsePopup(pulseEntry);
+  } else if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("Lock-In Check", {
+      body: "You there?",
+      tag: "lockin-pulse",
+      silent: true
+    });
+  }
+
+  lastPulseAt = now;
 }
 
-function render(){
-  const list=$('taskList'); list.innerHTML='';
-  tasks.forEach((t,i)=>{
-    const d=document.createElement('div');
-    d.className='task'+(i===current?' selected':'')+(t.done?' done':'');
-    d.draggable = (paused && !t.done);
+function showPulsePopup(pulseEntry) {
+  const popup = $('pulsePopup');
+  popup.style.display = 'flex';
+  $('pulseYesBtn').onclick = null;
+  $('pulseYesBtn').onclick = () => {
+    pulseEntry.answered = true;
+    popup.style.display = 'none';
+  };
+}
+
+
+function render() {
+  const list = $('taskList'); list.innerHTML = '';
+  tasks.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'task' + (i === current ? ' selected' : '') + (t.done ? ' done' : '');
+    d.onclick = () => { if (!t.done && paused) { current = i; render(); } };
     
-    d.onclick = () => {
-      if(!t.done && paused) {
-        current = i;
-        loadTask(i);
-        render();
-      }
-    };
-
-    d.ondragstart = (e) => {
-      d.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', i);
-    };
-    d.ondragend = () => d.classList.remove('dragging');
-    d.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
-    d.ondrop = (e) => {
-      e.preventDefault();
-      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-      const toIdx = i;
-      if(fromIdx === toIdx) return;
-      const movedItem = tasks.splice(fromIdx, 1)[0];
-      tasks.splice(toIdx, 0, movedItem);
-      if(current === fromIdx) current = toIdx;
-      else if(current > fromIdx && current <= toIdx) current--;
-      else if(current < fromIdx && current >= toIdx) current++;
-      render();
-    };
-
     const content = document.createElement('div');
     content.className = 'task-content';
-    content.innerHTML = `<b>${t.text}</b><br><small>${fmt(t.est)} est | ${fmt(t.spent)} spent</small>`;
+    content.innerHTML = `<b>${t.text}</b> <span style="font-size:9px; color:var(--muted); opacity:0.6">[${t.mode}]</span><br><small>${fmt(t.est)} est | ${fmt(t.spent)} spent</small>`;
     d.appendChild(content);
 
-    if(!t.done && paused){
-      const editBtn=document.createElement('button');
-      editBtn.className = 'btn-edit-task'; editBtn.innerHTML = '✎';
-      editBtn.style.cssText = "background:transparent; border:none; cursor:pointer; position:relative; z-index:10; font-size:18px;";
-      editBtn.onclick=(e)=>{
-        e.stopPropagation();
-        openEdit(i);
-      };
-      d.appendChild(editBtn);
+    if (!t.done && paused) {
+      const eb = document.createElement('button');
+      eb.innerHTML = '✎'; eb.style.cssText = "background:transparent; border:none; font-size:18px;";
+      eb.onclick = (e) => { e.stopPropagation(); openEdit(i); };
+      d.appendChild(eb);
     }
     list.appendChild(d);
   });
-  if(current !== null) {
-    loadTask(current);
-    if(!paused) $('startBtn').textContent = 'Pause';
-    else $('startBtn').textContent = tasks[current].spent > 0 ? 'Resume' : 'Start';
+  if (current !== null) {
+    $('currentTaskDisplay').textContent = tasks[current].text;
+    $('countdown').textContent = fmt(Math.max(0, tasks[current].est - tasks[current].spent));
+    $('stopwatch').textContent = fmt(tasks[current].spent);
+    $('startBtn').textContent = paused ? (tasks[current].spent > 0 ? 'Resume' : 'Start') : 'Pause';
   }
-  updateUI();
+  $('addWrapper').style.display = (paused || current === null) ? 'block' : 'none';
+  $('timerGrid').style.display = (current !== null) ? 'grid' : 'none';
+  $('endSessionBtn').style.display = sessionStartTimestamp ? 'block' : 'none';
+  $('actionButtons').style.display = (current !== null) ? 'flex' : 'none';
 }
 
-$('openAddModalBtn').onclick=()=>{
+$('openAddModalBtn').onclick = () => {
   editingIndex = null;
   $('modalTitle').textContent = "Add New Task";
   $('modalTaskName').value = ""; 
-  $('smartTimeInput').value = "00:00:00"; 
+  $('smartTimeInput').value = "00:00:00";
+  $('workModeToggle').checked = true;
+  $('modeDisplay').textContent = 'ONLINE';
+  $('pulseRange').value = 15;
+  $('pulseDisplay').textContent = '15m';
   $('deleteTaskBtn').style.display = 'none';
-  $('taskEditorOverlay').style.display='flex';
+  $('taskEditorOverlay').style.display = 'flex';
 };
 
-function openEdit(index){
+function openEdit(index) {
   editingIndex = index;
   const t = tasks[index];
   $('modalTitle').textContent = "Edit Task";
   $('modalTaskName').value = t.text;
-  
-  const h = Math.floor(t.est / 3600);
-  const m = Math.floor((t.est % 3600) / 60);
-  const s = t.est % 60;
+  const h = Math.floor(t.est/3600), m = Math.floor((t.est%3600)/60), s = t.est%60;
   $('smartTimeInput').value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  
+  $('workModeToggle').checked = (t.mode === 'ONLINE');
+  $('modeDisplay').textContent = t.mode;
+  $('pulseRange').value = t.pulse;
+  $('pulseDisplay').textContent = t.pulse === 0 ? 'OFF' : t.pulse + 'm';
   $('deleteTaskBtn').style.display = 'block';
-  $('taskEditorOverlay').style.display='flex';
+  $('taskEditorOverlay').style.display = 'flex';
 }
 
-$('saveTaskBtn').onclick=()=>{
-  const name = $('modalTaskName').value.trim();
-  const timeStr = $('smartTimeInput').value;
-  if(!name) return;
-  const total = timeToSeconds(timeStr);
-  if(total <= 0) return;
-  
-  if(editingIndex === null) {
-    tasks.push({text:name, est:total, spent:0, done:false});
-  } else { 
-    tasks[editingIndex].text=name; 
-    tasks[editingIndex].est=total; 
-  }
-  
-  $('taskEditorOverlay').style.display='none'; 
-  render();
-};
-
-$('cancelEditor').onclick=()=>{$('taskEditorOverlay').style.display='none';};
-$('deleteTaskBtn').onclick=()=>{
-  if(editingIndex !== null) {
+$('deleteTaskBtn').onclick = () => {
+  if (editingIndex !== null) {
     tasks.splice(editingIndex, 1);
-    if(current === editingIndex) current = null;
-    else if(current > editingIndex) current--;
-    $('taskEditorOverlay').style.display='none'; render();
+    if (current === null && tasks.length) {
+      current = tasks.findIndex(t => !t.done);
+    }
+    $('taskEditorOverlay').style.display = 'none';
+    render();
   }
 };
 
-function loadTask(i){
-  if(tasks[i]) {
-    $('currentTaskDisplay').textContent = tasks[i].text;
-    $('countdown').textContent = fmt(Math.max(0, tasks[i].est - tasks[i].spent));
-    $('stopwatch').textContent = fmt(tasks[i].spent);
-  }
-}
-
-$('startBtn').onclick=()=>{
-  if(current===null) return;
-  if(paused){
-    paused=false; $('stateText').textContent='Running'; 
-    if(!sessionStartTime) sessionStartTime = Date.now();
-    taskStart=Date.now()-tasks[current].spent*1000;
-    tick=setInterval(()=>{
-      const oldSpent = tasks[current].spent;
-      tasks[current].spent=Math.floor((Date.now()-taskStart)/1000);
-      totalFocusedSeconds += (tasks[current].spent - oldSpent);
-      loadTask(current);
-    },1000);
+$('saveTaskBtn').onclick = () => {
+  const name = $('modalTaskName').value.trim(), timeStr = $('smartTimeInput').value;
+  if (!name || timeToSeconds(timeStr) <= 0) return;
+  const mode = $('workModeToggle').checked ? 'ONLINE' : 'OFFLINE';
+  const pulse = parseInt($('pulseRange').value);
+  
+  if (editingIndex === null) {
+    tasks.push({ text: name, est: timeToSeconds(timeStr), spent: 0, done: false, log: [], pauses: 0, mode, pulse });
   } else {
-    paused=true; clearInterval(tick); $('stateText').textContent='Paused'; 
+    tasks[editingIndex].text = name; 
+    tasks[editingIndex].est = timeToSeconds(timeStr);
+    tasks[editingIndex].mode = mode;
+    tasks[editingIndex].pulse = pulse;
+  }
+  $('taskEditorOverlay').style.display = 'none'; 
+  render();
+};
+
+$('cancelEditor').onclick = () => { $('taskEditorOverlay').style.display = 'none'; };
+
+$('startBtn').onclick = () => {
+  if (current === null) return;
+  if (paused) {
+    paused = false; 
+    $('stateText').textContent = 'Running';
+    if (!sessionStartTimestamp) sessionStartTimestamp = Date.now();
+    tasks[current].log.push({ type: 'START', time: Date.now() });
+    tick = setInterval(() => {
+      tasks[current].spent++;
+      totalFocusedSeconds++;
+      $('countdown').textContent = fmt(Math.max(0, tasks[current].est - tasks[current].spent));
+      $('stopwatch').textContent = fmt(tasks[current].spent);
+    }, 1000);
+    // ==== START PULSE TIMER ====
+    if (tasks[current].pulse > 0) {
+      clearInterval(pulseTimer);
+      pulseTimer = setInterval(() => {
+        firePulse(tasks[current]);
+      }, tasks[current].pulse * 60 * 1000);
+    }
+  } else {
+    paused = true; clearInterval(tick);
+    $('stateText').textContent = 'Paused';
+    tasks[current].log.push({ type: 'PAUSE', time: Date.now() });
+    tasks[current].pauses++;
+    // ==== STOP PULSE TIMER ====
+    clearInterval(pulseTimer);
+
   }
   render();
 };
 
-$('completeBtn').onclick=()=>{
-  if(current===null)return;
-  clearInterval(tick); paused=true; tasks[current].done=true;
-  const next=tasks.findIndex(t=>!t.done);
-  if(next!==-1){ current=next; loadTask(current); }
-  else {
-    current=null;
-    endSession();
-  }
+$('completeBtn').onclick = () => {
+  if (current === null) return;
+  if (!paused) { paused = true; clearInterval(tick); tasks[current].log.push({ type: 'PAUSE', time: Date.now() }); }
+  tasks[current].done = true;
+  const next = tasks.findIndex(t => !t.done);
+  current = next !== -1 ? next : null;
+  if (current === null) endSession();
+
+  clearInterval(pulseTimer);
+  pulseTimer = null;
+
   render();
+  if (current !== null && !paused && tasks[current].pulse > 0) {
+    pulseTimer = setInterval(() => {
+      firePulse(tasks[current]);
+    }, tasks[current].pulse * 60 * 1000);
+  }
+
 };
 
 function endSession() {
-  clearInterval(tick);
-  paused = true;
-  const endTime = Date.now();
-  const totalSessionElapsed = sessionStartTime ? Math.floor((endTime - sessionStartTime) / 1000) : 0;
-  const pausedTime = Math.max(0, totalSessionElapsed - totalFocusedSeconds);
-  const ratio = totalSessionElapsed > 0 ? Math.round((totalFocusedSeconds / totalSessionElapsed) * 100) : 0;
-
-  $('resTotal').textContent = fmt(totalSessionElapsed);
+  clearInterval(tick); paused = true;
+  sessionEndTimestamp = Date.now();
+  if (!sessionStartTimestamp) sessionStartTimestamp = sessionEndTimestamp;
+  const total = Math.floor((sessionEndTimestamp - sessionStartTimestamp) / 1000);
+  const ratio = total > 0 ? Math.round((totalFocusedSeconds / total) * 100) : 0;
+  $('resTotal').textContent = fmt(total);
   $('resFocused').textContent = fmt(totalFocusedSeconds);
-  $('resPaused').textContent = fmt(pausedTime);
+  $('resPaused').textContent = fmt(Math.max(0, total - totalFocusedSeconds));
   $('resRatio').textContent = ratio + '%';
-
-  const breakdown = $('resBreakdown');
-  breakdown.innerHTML = '<div style="font-weight:700; font-size:12px; margin-bottom:10px; color:var(--muted); letter-spacing:1px;">TASK SUMMARY</div>';
+  const b = $('resBreakdown'); b.innerHTML = '';
   tasks.forEach(t => {
-    const row = document.createElement('div');
-    row.className = 'breakdown-row';
-    row.innerHTML = `<span>${t.text}</span> <span style="font-family:monospace; color:${t.done?'var(--accent)':'var(--muted)'}">${fmt(t.spent)}</span>`;
-    breakdown.appendChild(row);
+    const r = document.createElement('div'); r.className = 'breakdown-row';
+    r.innerHTML = `<div>${t.text} (${t.mode})</div><div style="font-family:monospace">${fmt(t.spent)}</div>`;
+    b.appendChild(r);
+  });
+  
+  const timeline = $('pulseTimeline');
+  timeline.innerHTML = '<h4>Pulse Timeline</h4>';
+
+  const timelineTrack = document.createElement('div');
+  timelineTrack.style.position = 'relative';
+  timelineTrack.style.minHeight = '100px'; // Changed to minHeight so it grows with logs
+  timelineTrack.style.marginTop = '10px';
+  timelineTrack.style.paddingLeft = '20px'; // Add padding so text doesn't hit the line
+  timelineTrack.style.borderLeft = '2px solid var(--border)';
+  timeline.appendChild(timelineTrack);
+
+  pulseLog.forEach(p => {
+    const marker = document.createElement('div');
+    marker.style.position = 'relative';
+    const offset = (p.time - sessionStartTimestamp) / 1000;
+  marker.style.marginTop = `${offset * 0.2}px`;
+    marker.style.cursor = 'pointer';
+    marker.innerHTML = `• ${new Date(p.time).toLocaleTimeString()} — ${p.answered ? '✔' : '✖'}`;
+    timelineTrack.appendChild(marker);
   });
 
-  $('resultsOverlay').style.display='flex';
+  $('resultsOverlay').style.display = 'flex';
 }
 
-$('closeStatsBtn').onclick=()=>{ 
-  tasks=[]; current=null; sessionStartTime=null; totalFocusedSeconds=0;
-  $('resultsOverlay').style.display='none'; render(); 
-};
+$('closeStatsBtn').onclick = () => { tasks = []; current = null; sessionStartTimestamp = null; totalFocusedSeconds = 0; $('resultsOverlay').style.display = 'none'; render(); };
 
 render();
 </script>
+
+
 </body>
 </html>
